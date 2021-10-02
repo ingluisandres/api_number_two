@@ -1,0 +1,43 @@
+version: '3'
+services:
+  web:
+    build: .
+    #restart: always SOLAMENTE EN DESARROLLO SE DEJA COMENTADO ESTA LINEA
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    ports:
+    - '5000:5000'
+    container_name: backend
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.app-http.rule=Host(`api.luiscontreras.xyz`)
+      - traefik.http.routers.app-http.tls=true
+      - traefik.http.routers.app-http.tls.certresolver=letsencrypt
+    depends_on: 
+    - 'database'
+  database:
+      image: mysql:8.0.13
+      command: --default-authentication-plugin=mysql_native_password
+      environment:
+        MYSQL_DATABASE: usuarios
+        MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      ports:
+      - '3306:3306'
+      security_opt:
+      - seccomp:unconfined
+      container_name: database
+      volumes: 
+      - /home/andy/dockerVolumes/mb:/var/lib/mysql
+  traefik:
+    image: traefik:v2.5.3
+    ports:
+      - 80:80
+      - 443:443
+    restart: always
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - $PWD/traefik/traefik.toml:/etc/traefik/traefik.toml
+      - traefik-public-certificates:/certificates
+
+volumes:
+  traefik-public-certificates:  
